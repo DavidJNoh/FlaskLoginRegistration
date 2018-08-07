@@ -80,8 +80,17 @@ def register():
 
     query = "INSERT INTO users (first_name, last_name, email, password, birthday, city, state, gender, created_at, updated_at) VALUES (%(first_name)s, %(last_name)s, %(email)s, %(password_hash)s, %(birthday)s, %(city)s, %(state)s, %(gender)s, now(), now());"
     
-    request.form['password_hash'] = pw_hash
-    stuff_id = mysql.query_db(query, request.form)
+    data ={
+        "first_name" : request.form['first_name'],
+        "last_name" : request.form['last_name'],
+        "email" : request.form['email'],
+        "password" : pw_hash,
+        "birthday" : request.form['birthday'],
+        "city" : request.form['city'],
+        "state" : request.form['state'],
+        "gender" : request.form['gender']
+    }
+    stuff_id = mysql.query_db(query, data)
     
     return redirect("/")
 
@@ -112,7 +121,7 @@ def login():
         return redirect ('/')
     
     if bcrypt.check_password_hash(hashfromdata, request.form['password']):
-        session['userid'] = result[0]['id']
+        session['userid'] = results[0]['id']
         return redirect("/success")
     
     else: 
@@ -121,7 +130,8 @@ def login():
 
 @app.route("/success")
 def endpage():
-     
+    if 'userid' not in session:
+        return redirect('/')
 
     mysql = connectToMySQL('LoginAndRegistration')
     query = "SELECT first_name from users WHERE id = %(userid)s"
