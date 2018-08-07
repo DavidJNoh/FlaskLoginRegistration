@@ -18,20 +18,17 @@ def home():
 
 @app.route('/register', methods=["post"])
 def register():
-    mysql = connectToMySQL('LoginAndRegistration')
-
     valid = True
     
+    mysql = connectToMySQL('LoginAndRegistration')
     query = "SELECT * from users WHERE email = %(email)s"
-    
     data = {"email" : request.form['email']}
-
     row = mysql.query_db(query, data)
 
     if len(row) > 0:
         flash("An account already has registered with the same email")
         valid = False
-    if len(request.form['email']) <1 :
+    elif len(request.form['email']) <1 :
         flash("Email cannot be blank")
         print("thisisworking")
         valid = False
@@ -70,10 +67,10 @@ def register():
     session['email']=request.form["email"]
     session['city']=request.form["city"]
     
-    if valid == False:
+    if not valid:
         return redirect('/')
 
-    if valid == True:
+    else:
         flash("Register Successful")
 
     pw_hash = bcrypt.generate_password_hash(request.form['password'])  
@@ -83,32 +80,24 @@ def register():
 
     query = "INSERT INTO users (first_name, last_name, email, password, birthday, city, state, gender, created_at, updated_at) VALUES (%(first_name)s, %(last_name)s, %(email)s, %(password_hash)s, %(birthday)s, %(city)s, %(state)s, %(gender)s, now(), now());"
     
-    data = { "first_name" : request.form['first_name'], 
-    "last_name" : request.form['last_name'], 
-    "email" : request.form['email'], 
-    "password_hash" : pw_hash, 
-    "birthday" : request.form['birthday'], 
-    "city" : request.form['city'], 
-    "state" : request.form['state'], 
-    "gender" : request.form['gender']}
-    
-    stuff_id = mysql.query_db(query, data)
+    request.form['password_hash'] = pw_hash
+    stuff_id = mysql.query_db(query, request.form)
     
     return redirect("/")
 
 @app.route('/login', methods=["post"])
 def login():
-    mysql = connectToMySQL('LoginAndRegistration')
-
-    query = "SELECT * from users WHERE email = %(email)s"
-    
-    data = {"email" : request.form['email']}
-
-    result = mysql.query_db(query, data)
-    hashfromdata=result[0]["password"]
-    print("DATABASE PASSWORD", hashfromdata)
-
     valid = True
+
+    mysql = connectToMySQL('LoginAndRegistration')
+    query = "SELECT * from users WHERE email = %(email)s"
+    results = mysql.query_db(query, request.form)
+
+    if results:
+        print("DATABASE PASSWORD", hashfromdata)
+    else:
+        flash("Invalid Email")
+        valid = False
 
     if len(request.form['email']) <1 :
         flash("Email cannot be blank")
@@ -132,17 +121,15 @@ def login():
 
 @app.route("/success")
 def endpage():
+     
+
     mysql = connectToMySQL('LoginAndRegistration')
+    query = "SELECT first_name from users WHERE id = %(userid)s"
+    user_firstname = mysql.query_db(query, session)
 
-    query = "SELECT first_name from users WHERE id = %(id)s"
-    
-    data = {"id" : session['userid']}
-
-    user_firstname = mysql.query_db(query, data)
     print(user_firstname)
 
     return render_template("end.html", name=user_firstname[0]["first_name"])
-
 
 
 if __name__=="__main__":
